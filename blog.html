@@ -7,7 +7,7 @@ title: Blog
 <ul>
   {% for post in site.posts limit:5 %}
     <li>
-      <a href="/{{ post.url }}">{{ post.title }}</a> <span>{{ post.date | date: "%Y-%m-%d" }}</span>
+      <a href="{{ post.path }}">{{ post.title }}</a> <span>{{ post.date | date: "%Y-%m-%d" }}</span>
     </li>
   {% endfor %}
 </ul> 
