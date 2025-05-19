@@ -65,6 +65,15 @@
                 <section class="page__content" itemprop="text">
                     <p>我是北京交通大学计算机科学与技术专业的本科生。</p>
 
+                    <h2 id="blog">最新工作日志</h2>
+                    <ul>
+                      {% for post in site.posts limit:5 %}
+                        <li>
+                          <a href="{{ post.url }}">{{ post.title }}</a> <span>{{ post.date | date: "%Y-%m-%d" }}</span>
+                        </li>
+                      {% endfor %}
+                    </ul>
+
                     <h2 id="education">教育经历</h2>
                     <div class="education-item">
                         <img src="xiaohui.png" width="90" height="90" alt="bjtu">
