@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 地球可视化 - 郭翔裕</title>
+    <meta name="description" content="交互式3D地球数据可视化展示">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1e3a 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #5588ff;
+            text-shadow: 0 0 20px rgba(85, 136, 255, 0.5);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            color: #a0b0d0;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        #globeContainer {
+            width: 90%;
+            max-width: 1200px;
+            height: 700px;
+            margin: 30px auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .info-section {
+            text-align: center;
+            padding: 30px 20px 50px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .info-section h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #4ecdc4;
+        }
+        
+        .info-section p {
+            font-size: 1em;
+            color: #b0c0d0;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #5588ff 0%, #4ecdc4 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(85, 136, 255, 0.4);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .header p {
+                font-size: 0.95em;
+            }
+            
+            #globeContainer {
+                width: 95%;
+                height: 500px;
+            }
+            
+            .info-section h2 {
+                font-size: 1.4em;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            #globeContainer {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌍 交互式 3D 地球可视化</h1>
+        <p>
+            基于 Gio.js 和 Three.js 构建的全球数据流动可视化展示<br>
+            使用鼠标拖拽旋转地球，观察全球数据交互效果
+        </p>
+    </div>
+    
+    <div id="globeContainer"></div>
+    
+    <div class="info-section">
+        <h2>功能说明</h2>
+        <p>• 地球会自动旋转，展示全球数据流动效果</p>
+        <p>• 红色线条表示数据流入，青色线条表示数据流出</p>
+        <p>• 使用鼠标可以拖拽旋转地球，查看不同角度</p>
+        <p>• 滚动鼠标滚轮可以缩放视图</p>
+        
+        <a href="index.html" class="back-link">返回主页</a>
+    </div>
+    
+    <!-- 引入 Three.js 和 Gio.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.118.3/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/giojs@2.1.0/build/gio.min.js"></script>
+    
+    <script>
+        // 初始化 Gio 地球
+        function initGlobe() {
+            // 检查容器是否存在
+            const container = document.getElementById('globeContainer');
+            if (!container) {
+                console.error('Globe container not found');
+                return;
+            }
+            
+            // 创建 Gio 控制器
+            const controller = new GIO.Controller(container, {
+                control: {
+                    initCountry: 'CN', // 初始国家设置为中国
+                    autoRotation: true, // 自动旋转
+                    autoRotationSpeed: 0.5 // 旋转速度
+                },
+                color: {
+                    surface: 0x0a1a2a,    // 深蓝色表面
+                    selected: null,        // 选中国家颜色
+                    in: 0xff6b6b,          // 流入数据红色
+                    out: 0x4ecdc4,         // 流出数据青色
+                    halo: 0x5588ff,        // 光晕蓝色
+                    background: 0x000000   // 黑色背景
+                },
+                brightness: {
+                    ocean: 0.5,     // 海洋亮度
+                    mentioned: 0.5, // 提及国家亮度
+                    related: 0.5    // 相关国家亮度
+                },
+                halo: true // 启用光晕效果
+            });
+            
+            // 添加示例数据 - 中国与主要国家的数据交互
+            const sampleData = [
+                // 中国向外的数据流
+                { "e": "CN", "i": "US", "v": 3000000 },  // 中国到美国
+                { "e": "CN", "i": "JP", "v": 2500000 },  // 中国到日本
+                { "e": "CN", "i": "KR", "v": 2000000 },  // 中国到韩国
+                { "e": "CN", "i": "DE", "v": 1800000 },  // 中国到德国
+                { "e": "CN", "i": "GB", "v": 1500000 },  // 中国到英国
+                { "e": "CN", "i": "FR", "v": 1400000 },  // 中国到法国
+                { "e": "CN", "i": "AU", "v": 1300000 },  // 中国到澳大利亚
+                { "e": "CN", "i": "CA", "v": 1200000 },  // 中国到加拿大
+                { "e": "CN", "i": "IN", "v": 1100000 },  // 中国到印度
+                { "e": "CN", "i": "BR", "v": 1000000 },  // 中国到巴西
+                { "e": "CN", "i": "RU", "v": 900000 },   // 中国到俄罗斯
+                { "e": "CN", "i": "IT", "v": 800000 },   // 中国到意大利
+                { "e": "CN", "i": "ES", "v": 750000 },   // 中国到西班牙
+                { "e": "CN", "i": "NL", "v": 700000 },   // 中国到荷兰
+                { "e": "CN", "i": "SG", "v": 650000 },   // 中国到新加坡
+                
+                // 其他国家向中国的数据流
+                { "e": "US", "i": "CN", "v": 2800000 },  // 美国到中国
+                { "e": "JP", "i": "CN", "v": 2300000 },  // 日本到中国
+                { "e": "KR", "i": "CN", "v": 1900000 },  // 韩国到中国
+                { "e": "DE", "i": "CN", "v": 1700000 },  // 德国到中国
+                { "e": "GB", "i": "CN", "v": 1400000 },  // 英国到中国
+                
+                // 其他国家之间的数据流
+                { "e": "US", "i": "GB", "v": 1500000 },  // 美国到英国
+                { "e": "US", "i": "JP", "v": 1400000 },  // 美国到日本
+                { "e": "GB", "i": "FR", "v": 1200000 },  // 英国到法国
+                { "e": "DE", "i": "FR", "v": 1100000 },  // 德国到法国
+                { "e": "JP", "i": "KR", "v": 1000000 }   // 日本到韩国
+            ];
+            
+            // 加载数据
+            controller.addData(sampleData);
+            
+            // 初始化并渲染
+            controller.init();
+            
+            console.log('Globe initialized successfully');
+        }
+        
+        // 页面加载完成后初始化地球
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGlobe);
+        } else {
+            initGlobe();
+        }
+    </script>
+</body>
+</html>

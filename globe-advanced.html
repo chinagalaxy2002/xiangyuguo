@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级 3D 地球 - 郭翔裕</title>
+    <meta name="description" content="使用 Three.js 创建的高级 3D 地球效果">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: #000000;
+            overflow: hidden;
+            color: white;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .info-overlay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+            max-width: 350px;
+        }
+        
+        .info-overlay h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+        
+        .info-overlay p {
+            font-size: 0.9em;
+            color: #b0c0d0;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #5588ff 0%, #4ecdc4 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+        
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: #4ecdc4;
+            z-index: 5;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .info-overlay {
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                max-width: none;
+            }
+            
+            .info-overlay h1 {
+                font-size: 1.4em;
+            }
+            
+            .info-overlay p {
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div class="info-overlay">
+        <h1>🌏 高级 3D 地球</h1>
+        <p>• 拖拽鼠标旋转地球</p>
+        <p>• 滚动鼠标滚轮缩放</p>
+        <p>• 地球会自动缓慢旋转</p>
+        <p>• 真实的地球纹理贴图</p>
+        <a href="index.html" class="back-link">返回主页</a>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <!-- 引入 Three.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let scene, camera, renderer, earth, atmosphere, clouds;
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        let isDragging = false;
+        let previousMouseX = 0, previousMouseY = 0;
+        
+        // 初始化场景
+        function init() {
+            const container = document.getElementById('canvas-container');
+            const loading = document.getElementById('loading');
+            
+            // 创建场景
+            scene = new THREE.Scene();
+            
+            // 创建相机
+            camera = new THREE.PerspectiveCamera(
+                45,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.z = 3;
+            
+            // 创建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
+            // 添加环境光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            // 添加点光源
+            const pointLight = new THREE.PointLight(0xffffff, 1.2);
+            pointLight.position.set(5, 3, 5);
+            scene.add(pointLight);
+            
+            // 创建地球
+            createEarth();
+            
+            // 创建大气层
+            createAtmosphere();
+            
+            // 隐藏加载提示
+            loading.style.display = 'none';
+            
+            // 添加事件监听
+            addEventListeners();
+            
+            // 开始动画
+            animate();
+        }
+        
+        // 创建地球
+        function createEarth() {
+            const geometry = new THREE.SphereGeometry(1, 64, 64);
+            
+            // 创建纹理加载器
+            const textureLoader = new THREE.TextureLoader();
+            
+            // 由于实际纹理图片可能不可用，我们使用程序化纹理
+            // 创建基础材质
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x2233ff,
+                emissive: 0x112244,
+                specular: 0x333333,
+                shininess: 25,
+                bumpScale: 0.05
+            });
+            
+            // 尝试加载真实纹理（如果可用）
+            textureLoader.load(
+                'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/examples/textures/planets/earth_atmos_2048.jpg',
+                (texture) => {
+                    material.map = texture;
+                    material.needsUpdate = true;
+                },
+                undefined,
+                (error) => {
+                    console.log('使用默认蓝色地球材质');
+                }
+            );
+            
+            // 尝试加载凹凸贴图
+            textureLoader.load(
+                'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/examples/textures/planets/earth_normal_2048.jpg',
+                (texture) => {
+                    material.bumpMap = texture;
+                    material.needsUpdate = true;
+                },
+                undefined,
+                (error) => {
+                    console.log('凹凸贴图加载失败，使用默认值');
+                }
+            );
+            
+            // 尝试加载高光贴图
+            textureLoader.load(
+                'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/examples/textures/planets/earth_specular_2048.jpg',
+                (texture) => {
+                    material.specularMap = texture;
+                    material.needsUpdate = true;
+                },
+                undefined,
+                (error) => {
+                    console.log('高光贴图加载失败，使用默认值');
+                }
+            );
+            
+            earth = new THREE.Mesh(geometry, material);
+            scene.add(earth);
+        }
+        
+        // 创建大气层
+        function createAtmosphere() {
+            const geometry = new THREE.SphereGeometry(1.05, 64, 64);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x4488ff,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.BackSide
+            });
+            
+            atmosphere = new THREE.Mesh(geometry, material);
+            scene.add(atmosphere);
+        }
+        
+        // 添加事件监听
+        function addEventListeners() {
+            // 窗口大小改变
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // 鼠标事件
+            document.addEventListener('mousemove', onMouseMove, false);
+            document.addEventListener('mousedown', onMouseDown, false);
+            document.addEventListener('mouseup', onMouseUp, false);
+            
+            // 触摸事件（移动端支持）
+            document.addEventListener('touchstart', onTouchStart, false);
+            document.addEventListener('touchmove', onTouchMove, false);
+            document.addEventListener('touchend', onTouchEnd, false);
+            
+            // 鼠标滚轮缩放
+            document.addEventListener('wheel', onWheel, false);
+        }
+        
+        // 窗口大小改变处理
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // 鼠标移动
+        function onMouseMove(event) {
+            if (isDragging) {
+                const deltaX = event.clientX - previousMouseX;
+                const deltaY = event.clientY - previousMouseY;
+                
+                targetRotationY += deltaX * 0.01;
+                targetRotationX += deltaY * 0.01;
+                
+                // 限制X轴旋转范围
+                targetRotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetRotationX));
+                
+                previousMouseX = event.clientX;
+                previousMouseY = event.clientY;
+            } else {
+                // 鼠标跟随效果（轻微）
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            }
+        }
+        
+        function onMouseDown(event) {
+            isDragging = true;
+            previousMouseX = event.clientX;
+            previousMouseY = event.clientY;
+        }
+        
+        function onMouseUp() {
+            isDragging = false;
+        }
+        
+        // 触摸事件处理
+        function onTouchStart(event) {
+            if (event.touches.length === 1) {
+                isDragging = true;
+                previousMouseX = event.touches[0].clientX;
+                previousMouseY = event.touches[0].clientY;
+            }
+        }
+        
+        function onTouchMove(event) {
+            if (event.touches.length === 1 && isDragging) {
+                const deltaX = event.touches[0].clientX - previousMouseX;
+                const deltaY = event.touches[0].clientY - previousMouseY;
+                
+                targetRotationY += deltaX * 0.01;
+                targetRotationX += deltaY * 0.01;
+                
+                targetRotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetRotationX));
+                
+                previousMouseX = event.touches[0].clientX;
+                previousMouseY = event.touches[0].clientY;
+            }
+        }
+        
+        function onTouchEnd() {
+            isDragging = false;
+        }
+        
+        // 鼠标滚轮缩放
+        function onWheel(event) {
+            event.preventDefault();
+            camera.position.z += event.deltaY * 0.001;
+            // 限制缩放范围
+            camera.position.z = Math.max(1.5, Math.min(5, camera.position.z));
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (earth && atmosphere) {
+                // 自动旋转
+                if (!isDragging) {
+                    earth.rotation.y += 0.001;
+                    atmosphere.rotation.y += 0.0012;
+                    
+                    // 轻微的鼠标跟随效果
+                    camera.position.x += (mouseX * 0.1 - camera.position.x) * 0.05;
+                    camera.position.y += (mouseY * 0.1 - camera.position.y) * 0.05;
+                } else {
+                    // 平滑旋转到目标角度
+                    earth.rotation.y += (targetRotationY - earth.rotation.y) * 0.1;
+                    earth.rotation.x += (targetRotationX - earth.rotation.x) * 0.1;
+                    atmosphere.rotation.y = earth.rotation.y;
+                    atmosphere.rotation.x = earth.rotation.x;
+                }
+                
+                camera.lookAt(scene.position);
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
