@@ -16,6 +16,80 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/academicons/1.9.2/css/academicons.min.css">
     <link rel="stylesheet" href="main.css">
+    <style>
+        /* Globe Section Styles */
+        .globe-section {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1e3a 100%);
+            padding: 50px 0;
+            margin: 40px 0;
+            border-radius: 10px;
+        }
+        
+        .globe-section h2 {
+            text-align: center;
+            color: #5588ff;
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(85, 136, 255, 0.3);
+        }
+        
+        .globe-section .subtitle {
+            text-align: center;
+            color: #a0b0d0;
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+        
+        .globe-container {
+            width: 80%;
+            height: 500px;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .globe-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .globe-links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #5588ff 0%, #4ecdc4 100%);
+            color: white !important;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .globe-links a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(85, 136, 255, 0.4);
+            text-decoration: none;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .globe-container {
+                width: 95%;
+                height: 400px;
+            }
+            
+            .globe-section h2 {
+                font-size: 1.5em;
+            }
+            
+            .globe-links a {
+                display: block;
+                margin: 10px auto;
+                width: 80%;
+                max-width: 300px;
+            }
+        }
+    </style>
     <script>document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';</script>
 </head>
 <body>
@@ -152,6 +226,17 @@
                     </p>
                     <p><strong>兴趣爱好</strong> <br> 篮球、音乐、唱歌、中国书法。</p>
                 </section>
+                
+                <!-- 全球可视化部分 -->
+                <section class="globe-section">
+                    <h2>🌍 全球视图</h2>
+                    <p class="subtitle">交互式 3D 地球数据可视化</p>
+                    <div id="embeddedGlobe" class="globe-container"></div>
+                    <div class="globe-links">
+                        <a href="globe.html" target="_blank">查看完整地球页面</a>
+                        <a href="globe-advanced.html" target="_blank">高级 3D 地球</a>
+                    </div>
+                </section>
             </div>
         </article>
     </div>
@@ -170,6 +255,12 @@
     </div>
 
     <script src="main.min.js"></script>
+    
+    <!-- Three.js and Gio.js libraries for globe visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.118.3/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/giojs@2.1.0/build/gio.min.js"></script>
+    <script src="globe-script.js"></script>
+    
     <script>
         function copyEmail(event) {
             event.preventDefault();
